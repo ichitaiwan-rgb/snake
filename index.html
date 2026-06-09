@@ -57,7 +57,7 @@
         }
 
         /* 統一全圖片基礎樣式 */
-        .snake-head, .snake, .snake-tail {
+        .snake-head, .snake, .snake-tail, .food {
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
@@ -67,6 +67,10 @@
         .snake-head { background-image: url('c.png'); }
         .snake      { background-image: url('b.png'); }
         .snake-tail { background-image: url('tttt.png'); }
+        
+        .food {
+            background-image: url('chi.png');
+        }
 
         /* 你的完美旋轉設定 */
         .dir-left {
@@ -83,11 +87,6 @@
 
         .dir-down {
             transform: rotate(-90deg);
-        }
-
-        .food {
-            background-color: #f56565;
-            border-radius: 50%;
         }
 
         #game-over-screen {
@@ -230,7 +229,6 @@
 
                     if (index === snake.length - 1) {
                         cells[cellIndex].classList.add('snake-tail');
-                        // 💡 關鍵修正：尾巴的方向要跟前進方向相反（也就是跟原計算反轉 180 度）
                         if (segmentDir === 'left') segmentDir = 'right';
                         else if (segmentDir === 'right') segmentDir = 'left';
                         else if (segmentDir === 'up') segmentDir = 'down';
