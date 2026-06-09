@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=no">
-    <title>16x16 經典貪吃蛇（響應式滑動版）</title>
+    <title>16x16 經典貪吃蛇（圖片蛇頭版）</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -15,7 +15,6 @@
             min-height: 100vh;
             margin: 0;
             overflow: hidden;
-            /* 💡 防止手機上滑動畫面時導致整個網頁跟著橡皮筋晃動 */
             touch-action: none; 
         }
 
@@ -32,12 +31,11 @@
             color: #4a5568;
         }
 
-        /* 💡 響應式地圖容器設定：最大 400px，在小螢幕時自動縮小成滿版（留邊距） */
         .game-container {
             position: relative;
             width: 90vw;
             max-width: 400px;
-            aspect-ratio: 1 / 1; /* 確保永遠是正方形 */
+            aspect-ratio: 1 / 1;
         }
 
         #game-board {
@@ -58,22 +56,30 @@
             background-color: #2d3748;
         }
 
+        /* 蛇身保持原本的綠色圓角矩形 */
         .snake {
-            background-color: #48bb78;
+            background-color: #3dc3d4;
             border-radius: 4px;
         }
 
+        /* 💡 關鍵修改：將蛇頭換成圖片 */
         .snake-head {
-            background-color: #38a169;
-            border-radius: 4px;
+            /* 1. 你可以換成你電腦裡的檔名，例如: url('head.png') */
+            /* 2. 或是像現在這樣直接放網路圖片網址（目前範例是一隻可愛的綠色恐龍頭） */
+            background-image: url('c.png');
+            
+            background-size: contain;     /* 讓圖片完整縮放到格子內 */
+            background-repeat: no-repeat; /* 防止圖片重複拼貼 */
+            background-position: center;  /* 讓圖片在格子正中央 */
+            background-color: transparent;/* 如果圖片去背，把底色變透明，不然也可以保留 #38a169 */
         }
 
+        /* 紅色食物 */
         .food {
             background-color: #f56565;
             border-radius: 50%;
         }
 
-        /* 遊戲結束覆蓋畫面（同樣支援響應式） */
         #game-over-screen {
             display: none;
             position: absolute;
@@ -148,7 +154,6 @@
         let gameInterval = null;
         const gameSpeed = 150;
 
-        // 觸控手勢變數
         let touchStartX = 0;
         let touchStartY = 0;
 
@@ -241,6 +246,7 @@
             draw();
         }
 
+        // 旋轉蛇頭的進階設計（可選，如果需要讓圖片跟著方向轉，可以加入 CSS rotate，這邊先保持純圖片）
         function changeDirection(newDir) {
             if (newDir === 'UP' && direction !== 'DOWN') nextDirection = 'UP';
             if (newDir === 'DOWN' && direction !== 'UP') nextDirection = 'DOWN';
@@ -248,6 +254,7 @@
             if (newDir === 'RIGHT' && direction !== 'LEFT') nextDirection = 'RIGHT';
         }
 
+        // 剩下的監聽事件與初始化...
         function endGame() {
             clearInterval(gameInterval);
             gameOverScreen.style.display = 'flex';
@@ -260,7 +267,6 @@
 
             document.getElementById('restart-btn').addEventListener('click', resetGame);
 
-            // 1. 電腦鍵盤事件
             window.addEventListener('keydown', e => {
                 if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
                     e.preventDefault();
@@ -273,44 +279,32 @@
                 }
             });
 
-            // 2. 手機觸控滑動事件（綁定在整個網頁，滑哪裡都能控）
             window.addEventListener('touchstart', e => {
                 touchStartX = e.touches[0].clientX;
                 touchStartY = e.touches[0].clientY;
             }, { passive: false });
 
-            window.addEventListener('touchmove', e => {
-                // 阻止滑動時的頁面捲動行為
-                e.preventDefault();
-            }, { passive: false });
+            window.addEventListener('touchmove', e => { e.preventDefault(); }, { passive: false });
 
             window.addEventListener('touchend', e => {
                 if (!touchStartX || !touchStartY) return;
-
                 let touchEndX = e.changedTouches[0].clientX;
                 let touchEndY = e.changedTouches[0].clientY;
-
                 let diffX = touchEndX - touchStartX;
                 let diffY = touchEndY - touchStartY;
-                
-                const threshold = 30; // 判定滑動的最小距離（像素）
+                const threshold = 30;
 
-                // 判斷是水平滑動還是垂直滑動
                 if (Math.abs(diffX) > Math.abs(diffY)) {
-                    // 水平滑動
                     if (Math.abs(diffX) > threshold) {
                         if (diffX > 0) changeDirection('RIGHT');
                         else changeDirection('LEFT');
                     }
                 } else {
-                    // 垂直滑動
                     if (Math.abs(diffY) > threshold) {
                         if (diffY > 0) changeDirection('DOWN');
                         else changeDirection('UP');
                     }
                 }
-
-                // 重置座標
                 touchStartX = 0;
                 touchStartY = 0;
             }, { passive: false });
