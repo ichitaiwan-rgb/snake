@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=no">
-    <title>16x16 經典貪吃蛇（圖片蛇頭版）</title>
+    <title>16x16 經典貪吃蛇（蛇頭旋轉版）</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -56,25 +56,37 @@
             background-color: #2d3748;
         }
 
-        /* 蛇身保持原本的綠色圓角矩形 */
         .snake {
-            background-color: #3dc3d4;
+            background-color: #41d5e8;
             border-radius: 4px;
         }
 
-        /* 💡 關鍵修改：將蛇頭換成圖片 */
+        /* 💡 基礎蛇頭樣式 */
         .snake-head {
-            /* 1. 你可以換成你電腦裡的檔名，例如: url('head.png') */
-            /* 2. 或是像現在這樣直接放網路圖片網址（目前範例是一隻可愛的綠色恐龍頭） */
             background-image: url('c.png');
-            
-            background-size: contain;     /* 讓圖片完整縮放到格子內 */
-            background-repeat: no-repeat; /* 防止圖片重複拼貼 */
-            background-position: center;  /* 讓圖片在格子正中央 */
-            background-color: transparent;/* 如果圖片去背，把底色變透明，不然也可以保留 #38a169 */
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: transparent;
         }
 
-        /* 紅色食物 */
+        .snake-head.dir-left {
+            transform: rotate(0deg);
+        }
+
+        .snake-head.dir-up {
+           transform: rotate(90deg);
+
+        }
+
+        .snake-head.dir-right {
+            transform: scaleX(-1);
+        }
+
+        .snake-head.dir-down {
+            transform: rotate(-90deg);
+        }
+
         .food {
             background-color: #f56565;
             border-radius: 50%;
@@ -195,6 +207,7 @@
             }
         }
 
+        // 💡 渲染畫面：動態注入方向 class
         function draw() {
             const cells = document.querySelectorAll('.cell');
             cells.forEach(cell => { cell.className = 'cell'; });
@@ -202,7 +215,13 @@
             snake.forEach((segment, index) => {
                 const cellIndex = segment.y * BOARD_SIZE + segment.x;
                 if (cells[cellIndex]) {
-                    cells[cellIndex].classList.add(index === 0 ? 'snake-head' : 'snake');
+                    if (index === 0) {
+                        // 如果是蛇頭，除了加 snake-head，還要根據當前 direction 加上對應的 class
+                        cells[cellIndex].classList.add('snake-head');
+                        cells[cellIndex].classList.add(`dir-${direction.toLowerCase()}`);
+                    } else {
+                        cells[cellIndex].classList.add('snake');
+                    }
                 }
             });
 
@@ -246,18 +265,11 @@
             draw();
         }
 
-        // 旋轉蛇頭的進階設計（可選，如果需要讓圖片跟著方向轉，可以加入 CSS rotate，這邊先保持純圖片）
         function changeDirection(newDir) {
             if (newDir === 'UP' && direction !== 'DOWN') nextDirection = 'UP';
             if (newDir === 'DOWN' && direction !== 'UP') nextDirection = 'DOWN';
             if (newDir === 'LEFT' && direction !== 'RIGHT') nextDirection = 'LEFT';
             if (newDir === 'RIGHT' && direction !== 'LEFT') nextDirection = 'RIGHT';
-        }
-
-        // 剩下的監聽事件與初始化...
-        function endGame() {
-            clearInterval(gameInterval);
-            gameOverScreen.style.display = 'flex';
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -311,6 +323,11 @@
 
             resetGame();
         });
+
+        function endGame() {
+            clearInterval(gameInterval);
+            gameOverScreen.style.display = 'flex';
+        }
     </script>
 </body>
 </html>
