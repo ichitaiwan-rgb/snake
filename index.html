@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>16x16 經典貪吃蛇（網頁版）</title>
+    <style>
+        /* 網頁版背景與置中設計 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* 防止整個大網頁出現捲軸干擾 */
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+
+        #score-board {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #4a5568;
+        }
+
+        /* 16x16 遊戲地圖網格 */
+        #game-board {
+            width: 400px;
+            height: 400px;
+            background-color: #1a202c;
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            grid-template-rows: repeat(16, 1fr);
+            gap: 1px;
+            border: 4px solid #2d3748;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .cell {
+            background-color: #2d3748;
+        }
+
+        /* 蛇身與蛇頭 */
+        .snake {
+            background-color: #48bb78;
+            border-radius: 4px;
+        }
+
+        .snake-head {
+            background-color: #38a169;
+            border-radius: 4px;
+        }
+
+        /* 紅色食物 */
+        .food {
+            background-color: #f56565;
+            border-radius: 50%;
+        }
+
+        /* 遊戲結束覆蓋畫面 */
+        #game-over-screen {
+            display: none;
+            position: absolute;
+            width: 408px;
+            height: 408px;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: white;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 26px;
+            top: 0;
+            left: 0;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: #3182ce;
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .tip {
+            margin-top: 15px;
+            color: #718096;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>經典貪吃蛇 (16 × 16)</h1>
+    <div id="score-board">分數: <span id="score">0</span></div>
+
+    <div style="position: relative;">
+        <div id="game-board"></div>
+        
+        <div id="game-over-screen">
+            <div>遊戲結束!</div>
+            <button id="restart-btn">重新開始</button>
+        </div>
+    </div>
+
+    <div class="tip">提示：使用鍵盤方向鍵 (↑ ↓ ← →) 或 W, A, S, D 進行控制</div>
+
+    <script>
+        const BOARD_SIZE = 16;
+        let gameBoard, scoreElement, gameOverScreen;
+        let snake = [];
+        let food = { x: 0, y: 0 };
+        let direction = 'RIGHT';
+        let nextDirection = 'RIGHT';
+        let score = 0;
+        let gameInterval = null;
+        const gameSpeed = 150; // 每一格移動的速度（毫秒）
+
+        // 初始化網格地圖
+        function createBoard() {
+            gameBoard.innerHTML = '';
+            for (let i = 0; i < BOARD_SIZE * BOARD_SIZE; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                gameBoard.appendChild(cell);
+            }
+        }
+
+        // 開始或重置遊戲
+        function resetGame() {
+            createBoard();
+            // 預設蛇身位置 (在中左側，長度為3)
+            snake = [
+                { x: 4, y: 8 },
+                { x: 3, y: 8 },
+                { x: 2, y: 8 }
+            ];
+            direction = 'RIGHT';
+            nextDirection = 'RIGHT';
+            score = 0;
+            scoreElement.innerText = score;
+            gameOverScreen.style.display = 'none';
+            
+            generateFood();
+            draw();
+            
+            clearInterval(gameInterval);
+            gameInterval = setInterval(gameLoop, gameSpeed);
+        }
+
+        // 隨機生成紅色果實
+        function generateFood() {
+            while (true) {
+                food.x = Math.floor(Math.random() * BOARD_SIZE);
+                food.y = Math.floor(Math.random() * BOARD_SIZE);
+                
+                // 確保食物不會出現在蛇的身體上
+                const onSnake = snake.some(segment => segment.x === food.x && segment.y === food.y);
+                if (!onSnake) break;
+            }
+        }
+
+        // 畫面渲染
+        function draw() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => { cell.className = 'cell'; });
+
+            // 繪製蛇
+            snake.forEach((segment, index) => {
+                const cellIndex = segment.y * BOARD_SIZE + segment.x;
+                if (cells[cellIndex]) {
+                    cells[cellIndex].classList.add(index === 0 ? 'snake-head' : 'snake');
+                }
+            });
+
+            // 繪製食物
+            const foodIndex = food.y * BOARD_SIZE + food.x;
+            if (cells[foodIndex]) {
+                cells[foodIndex].classList.add('food');
+            }
+        }
+
+        // 核心計時器循環
+        function gameLoop() {
+            direction = nextDirection;
+            const head = { ...snake[0] };
+            
+            switch (direction) {
+                case 'UP': head.y -= 1; break;
+                case 'DOWN': head.y += 1; break;
+                case 'LEFT': head.x -= 1; break;
+                case 'RIGHT': head.x += 1; break;
+            }
+
+            // 撞牆死
+            if (head.x < 0 || head.x >= BOARD_SIZE || head.y < 0 || head.y >= BOARD_SIZE) {
+                endGame();
+                return;
+            }
+
+            // 咬到自己死
+            if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+                endGame();
+                return;
+            }
+
+            // 將新蛇頭加到最前面
+            snake.unshift(head);
+
+            // 吃食物判定
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                scoreElement.innerText = score;
+                generateFood();
+            } else {
+                // 沒吃到就移除蛇尾，維持原本長度
+                snake.pop();
+            }
+
+            draw();
+        }
+
+        // 改變方向（防止 180 度自殺式直接回頭）
+        function changeDirection(newDir) {
+            if (newDir === 'UP' && direction !== 'DOWN') nextDirection = 'UP';
+            if (newDir === 'DOWN' && direction !== 'UP') nextDirection = 'DOWN';
+            if (newDir === 'LEFT' && direction !== 'RIGHT') nextDirection = 'LEFT';
+            if (newDir === 'RIGHT' && direction !== 'LEFT') nextDirection = 'RIGHT';
+        }
+
+        // 結束遊戲
+        function endGame() {
+            clearInterval(gameInterval);
+            gameOverScreen.style.display = 'flex';
+        }
+
+        // 監聽網頁事件
+        document.addEventListener('DOMContentLoaded', () => {
+            gameBoard = document.getElementById('game-board');
+            scoreElement = document.getElementById('score');
+            gameOverScreen = document.getElementById('game-over-screen');
+
+            // 重新開始按鈕事件
+            document.getElementById('restart-btn').addEventListener('click', resetGame);
+
+            // 鍵盤操控與防止視窗捲動
+            window.addEventListener('keydown', e => {
+                // 如果按下的是方向鍵或空白鍵，禁止網頁的預設捲動行為，確保畫面穩如泰山
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                    e.preventDefault();
+                }
+
+                switch (e.key) {
+                    case 'ArrowUp': case 'w': case 'W': changeDirection('UP'); break;
+                    case 'ArrowDown': case 's': case 'S': changeDirection('DOWN'); break;
+                    case 'ArrowLeft': case 'a': case 'A': changeDirection('LEFT'); break;
+                    case 'ArrowRight': case 'd': case 'D': changeDirection('RIGHT'); break;
+                }
+            });
+
+            // 初始化啟動
+            resetGame();
+        });
+    </script>
+</body>
+</html>
